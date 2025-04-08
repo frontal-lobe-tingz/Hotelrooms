@@ -19,7 +19,7 @@ function Loginscreen() {
   
     try {
       setLoading(true);
-      const response = await axios.post("http://localhost:5000/api/user/login", user);
+      const response = await axios.post("https://hotelrooms-backend.onrender.comapi/user/login", user);
       localStorage.setItem("currentUser", JSON.stringify(response.data));
       setLoading(false);
       navigate("/home");

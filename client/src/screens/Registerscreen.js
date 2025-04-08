@@ -26,7 +26,7 @@ function Registerscreen() {
       try {
         setLoading(true);
         // Await the result and access .data after the promise resolves
-        const response = await axios.post('http://localhost:5000/api/user/register', user);
+        const response = await axios.post('https://hotelrooms-backend.onrender.comapi/user/register', user);
         console.log(response.data); // Response from backend
        // alert(response.data.message); // Shows success message
      setLoading(false)
