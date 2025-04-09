@@ -18,7 +18,6 @@ function Registerscreen() {
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
 
-  // Get API URL from environment variables
   const API_URL = import.meta.env.VITE_API_URL || "https://hotelrooms-backend.onrender.com";
 
   // Handle success state and auto-redirect
@@ -41,7 +40,7 @@ function Registerscreen() {
     }
 
     if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(formData.email)) {
-      setError('Invalid email format');
+      setError('Please enter a valid email address');
       return;
     }
 
@@ -66,10 +65,11 @@ function Registerscreen() {
       }, {
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 10000 // 10 second timeout
       });
 
-      if (response.data && response.data._id) {
+      if (response.status >= 200 && response.status < 300) {
         setSuccess(true);
         setFormData({
           name: '',
@@ -77,14 +77,18 @@ function Registerscreen() {
           password: '',
           confirmPassword: ''
         });
+      } else {
+        throw new Error(response.data.message || 'Registration failed');
       }
     } catch (err) {
       let errorMessage = 'Registration failed. Please try again.';
       
-      if (err.code === 'ERR_NETWORK') {
-        errorMessage = 'Cannot connect to server. Please check your internet connection.';
-      } else if (err.response?.status === 400) {
-        errorMessage = err.response.data.message;
+      if (err.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (err.response) {
+        errorMessage = err.response.data.message || errorMessage;
+      } else if (err.request) {
+        errorMessage = 'No response from server. Please check your connection.';
       }
       
       setError(errorMessage);
@@ -124,7 +128,7 @@ function Registerscreen() {
 
               <form onSubmit={register}>
                 <div className="mb-3">
-                  <label htmlFor="name" className="form-label">Name</label>
+                  <label htmlFor="name" className="form-label">Full Name</label>
                   <input
                     type="text"
                     className="form-control"
@@ -133,11 +137,12 @@ function Registerscreen() {
                     value={formData.name}
                     onChange={handleInputChange}
                     required
+                    autoFocus
                   />
                 </div>
 
                 <div className="mb-3">
-                  <label htmlFor="email" className="form-label">Email</label>
+                  <label htmlFor="email" className="form-label">Email Address</label>
                   <input
                     type="email"
                     className="form-control"
@@ -179,13 +184,13 @@ function Registerscreen() {
 
                 <button 
                   type="submit" 
-                  className="btn btn-primary w-100"
+                  className="btn btn-primary w-100 py-2"
                   disabled={loading}
                 >
                   {loading ? (
                     <>
                       <span className="spinner-border spinner-border-sm me-2"></span>
-                      Registering...
+                      Processing...
                     </>
                   ) : (
                     'Create Account'
@@ -195,8 +200,8 @@ function Registerscreen() {
 
               <div className="mt-3 text-center">
                 <p className="mb-0">
-                  Already have an account? {' '}
-                  <Link to="/login" className="text-primary">Login here</Link>
+                  Already have an account?{' '}
+                  <Link to="/login" className="text-primary fw-semibold">Login here</Link>
                 </p>
               </div>
             </div>
