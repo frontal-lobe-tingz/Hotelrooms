@@ -1,119 +1,117 @@
+// client/src/screens/Bookingscreen.js
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Loader from "../components/Loader";
 import Error from "../components/Error";
-import dayjs from 'dayjs';
+import dayjs from "dayjs";
 
 function Bookingscreen() {
   const { roomid, fromdate, todate } = useParams();
+  const navigate = useNavigate();
+  const API_URL = process.env.REACT_APP_API_URL;
+
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [room, setRoom] = useState(null);
+  const [error,   setError]   = useState(null);
+  const [room,    setRoom]    = useState(null);
 
   useEffect(() => {
-    const fetchRoomData = async () => {
-     if(!localStorage.getItem('currentUser')){
-      window.location.reload='/login';
-     }
+    // Redirect to login if not authenticated
 
+    if (!currentUser) {
+      navigate("/login");
+      return;
+    }
+
+    // Fetch room details
+    const fetchRoomData = async () => {
       try {
         setLoading(true);
-        const { data } = await axios.post("/api/rooms/getroombyid", { roomid });
+        const { data } = await axios.post(
+          `${API_URL}/api/rooms/getroombyid`,
+          { roomid },
+          { headers: { "Content-Type": "application/json" } }
+        );
         setRoom(data);
-        setLoading(false);
       } catch (err) {
-        setError(err.message);
+        console.error("Fetch room error:", err.response?.data || err.message);
+        setError("Could not load room details");
+      } finally {
         setLoading(false);
       }
     };
 
     fetchRoomData();
-  }, [roomid]);
+  }, [API_URL, navigate, roomid]);
 
-  // Parse dates manually to ensure they are properly formatted
-  const parsedFromDate = dayjs(fromdate, 'DD-MM-YYYY');
-  const parsedToDate = dayjs(todate, 'DD-MM-YYYY');
-
-  // Check if the dates are valid
-  const formattedFromDate = parsedFromDate.isValid() ? parsedFromDate.format('DD-MM-YYYY') : 'Invalid Date';
-  const formattedToDate = parsedToDate.isValid() ? parsedToDate.format('DD-MM-YYYY') : 'Invalid Date';
-
-  // Calculate the total number of days between fromdate and todate
-  const totalDays = parsedToDate.isValid() && parsedFromDate.isValid()
-    ? parsedToDate.diff(parsedFromDate, 'day') + 1
-    : 0;
-
-  // Calculate total amount if room exists
+  // parse and format dates
+  const start = dayjs(fromdate, "DD-MM-YYYY");
+  const end   = dayjs(todate,   "DD-MM-YYYY");
+  const validDates = start.isValid() && end.isValid();
+  const totalDays   = validDates ? end.diff(start, "day") + 1 : 0;
   const totalAmount = room ? totalDays * room.rentperday : 0;
 
-
-  async function bookRoom() {
-    const currentUser = localStorage.getItem('currentUser');
-  
+  const bookRoom = async () => {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
     if (!currentUser) {
-      alert('User not logged in');
+      navigate("/login");
       return;
     }
-  
+
     const bookingDetails = {
       room,
-      userid: JSON.parse(currentUser)._id, // userid from localStorage
+      userid:        currentUser._id,
       fromdate,
       todate,
       totalAmount,
       totalDays,
-      transactionid: '1234', // Mock transaction ID for now
+      transactionid: "1234", // placeholder
     };
+
     try {
-      console.log('Booking Details:', bookingDetails); // Debugging info
-      await axios.post('/api/bookings/bookroom', bookingDetails);
-      alert('Booking successful');
-      window.location.href = '/home';
+      setLoading(true);
+      await axios.post(
+        `${API_URL}/api/bookings/bookroom`,
+        bookingDetails,
+        { headers: { "Content-Type": "application/json" } }
+      );
+      alert("Booking successful");
+      navigate("/home");
     } catch (err) {
-      console.error('Error during booking:', err.response?.data || err.message);
-      alert('Error during booking: ' + err.message);
+      console.error("Error during booking:", err.response?.data || err.message);
+      alert("Error during booking: " + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
     }
-  }
-  
+  };
+
+  if (loading) return <Loader />;
+  if (error)   return <Error message={error} />;
 
   return (
-    <div className="m-6">
-      {loading ? (
-        <Loader />
-      ) : error ? (
-        <Error message={error} />
-      ) : room ? (
-        <div className="row justify-content-center mt-5 bs">
-          <div className="col-md-6" style={{ textAlign: 'right' }}>
-            <h1>{room.name}</h1>
-            <img src={room.imageurls[0]} className="bigimg" alt={room.name} />
+    <div className="container mt-5">
+      {room && (
+        <div className="row justify-content-center bs p-4">
+          <div className="col-md-6 text-center">
+            <h2>{room.name}</h2>
+            <img src={room.imageurls[0]} className="img-fluid" alt={room.name} />
           </div>
-          <div className="col-md-5" style={{ textAlign: 'right' }}>
-            <h1>Booking Details</h1>
-            <div style={{ textAlign: 'right' }}>
-              <b>
-                <p>Name: {JSON.parse(localStorage.getItem('currentUser')).name}</p>
-                <p>From Date: {formattedFromDate}</p>
-                <p>To Date: {formattedToDate}</p>
-                <p>Max Capacity: <strong>{room.maxcount}</strong></p>
-              </b>
-              <div style={{ textAlign: 'right' }}>
-                <b>
-                  <h1>Amount</h1>
-                  <p>Total days: {totalDays}</p>
-                  <p>Rent per day: {room.rentperday}</p>
-                  <p>Total amount: {totalAmount}</p>
-                </b>
-              </div>
-              <div style={{ float: "right" }}>
-                <button className="btn btn-primary" onClick={bookRoom}>Pay Now</button>
-              </div>
-            </div>
+          <div className="col-md-5">
+            <h3>Booking Details</h3>
+            <p><strong>Name:</strong> {currentUser.name}</p>
+            <p><strong>From:</strong> {fromdate}</p>
+            <p><strong>To:</strong> {todate}</p>
+            <p><strong>Days:</strong> {totalDays}</p>
+            <p><strong>Rent/day:</strong> {room.rentperday}</p>
+            <p><strong>Total:</strong> {totalAmount}</p>
+            <button className="btn btn-primary mt-3" onClick={bookRoom}>
+              Pay Now
+            </button>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
