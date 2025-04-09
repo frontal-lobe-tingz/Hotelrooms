@@ -19,13 +19,37 @@ function Registerscreen() {
   const navigate = useNavigate();
 
   // Get API URL from environment variables
-  const API_URL = process.env.REACT_APP_API_URL || 
-                 process.env.VITE_API_URL || 
-                 "https://hotelrooms-backend.onrender.com";
+  const API_URL = import.meta.env.VITE_API_URL || "https://hotelrooms-backend.onrender.com";
+
+  // Handle success state and auto-redirect
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [success, navigate]);
 
   async function register(e) {
     e.preventDefault();
     
+    // Form validation
+    if (!formData.name || !formData.email || !formData.password) {
+      setError('All fields are required');
+      return;
+    }
+
+    if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(formData.email)) {
+      setError('Invalid email format');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -47,11 +71,6 @@ function Registerscreen() {
 
       if (response.data && response.data._id) {
         setSuccess(true);
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
-        
-        // Reset form
         setFormData({
           name: '',
           email: '',
@@ -60,11 +79,16 @@ function Registerscreen() {
         });
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 
-                          err.message || 
-                          'Registration failed. Please try again.';
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      if (err.code === 'ERR_NETWORK') {
+        errorMessage = 'Cannot connect to server. Please check your internet connection.';
+      } else if (err.response?.status === 400) {
+        errorMessage = err.response.data.message;
+      }
+      
       setError(errorMessage);
-      console.error('Registration error:', errorMessage);
+      console.error('Registration error:', err);
     } finally {
       setLoading(false);
     }
@@ -87,8 +111,16 @@ function Registerscreen() {
             <div className="card-body p-4">
               <h2 className="card-title text-center mb-4">Register</h2>
               
-              {error && <Error message={error} onClose={() => setError(null)} />}
-              {success && <Success message="Registration successful! Redirecting to login..." />}
+              {error && (
+                <Error 
+                  message={error} 
+                  onClose={() => setError(null)} 
+                />
+              )}
+              
+              {success && (
+                <Success message="Registration successful! Redirecting to login..." />
+              )}
 
               <form onSubmit={register}>
                 <div className="mb-3">
@@ -150,7 +182,14 @@ function Registerscreen() {
                   className="btn btn-primary w-100"
                   disabled={loading}
                 >
-                  {loading ? 'Registering...' : 'Create Account'}
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      Registering...
+                    </>
+                  ) : (
+                    'Create Account'
+                  )}
                 </button>
               </form>
 
