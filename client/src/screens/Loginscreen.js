@@ -1,68 +1,58 @@
-import React, { useState, useEffect } from "react";
+// client/src/screens/Loginscreen.js
+import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate, Link } from "react-router-dom"; // Changed from <a> to <Link>
+import { useNavigate, Link } from "react-router-dom";
 import Loader from "../components/Loader";
-import Error from '../components/Error';
+import Error from "../components/Error";
 
 function Loginscreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Get API URL from environment variables
-  const API_URL = process.env.REACT_APP_API_URL || 
-                 process.env.VITE_API_URL || 
-                 "https://hotelrooms-backend.onrender.com";
+  const navigate = useNavigate();
+  const API_URL = process.env.REACT_APP_API_URL;
 
-  async function login(e) {
-    e.preventDefault(); // Prevent default form submission
-    
+  const login = async (e) => {
+    e.preventDefault();
+
+    // Basic client‑side validation
     if (!email || !password) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       return;
     }
 
-    const user = { email, password };
-
     try {
       setLoading(true);
-<<<<<<< Updated upstream
       setError(null);
-      
-      const response = await axios.post(`${API_URL}/api/user/login`, user, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
 
-      if (response.data && response.data.token) {
-        // Store only necessary user data
-        localStorage.setItem("currentUser", JSON.stringify({
-          token: response.data.token,
-          name: response.data.name,
-          email: response.data.email
-        }));
-        
+      // POST to your backend
+      const response = await axios.post(
+        `${API_URL}/api/user/login`,
+        { email, password },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      // ANY 2xx is a success
+      if (response.status >= 200 && response.status < 300) {
+        // save the entire user object (no token yet)
+        localStorage.setItem("currentUser", JSON.stringify(response.data));
+        // navigate to home
         navigate("/home");
       }
-=======
-      const response = await axios.post("http://localhost:5000/api/user/login", user);
-      localStorage.setItem("currentUser", JSON.stringify(response.data));
-      setLoading(false);
-      navigate("/home");
->>>>>>> Stashed changes
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 
-                          err.message || 
-                          'Login failed. Please try again.';
-      setError(errorMessage);
-      console.error("Login error:", errorMessage);
+      // prefer backend message, then generic
+      const msg =
+        err.response?.data?.message ||
+        err.message ||
+        "Login failed. Please try again.";
+      setError(msg);
+      console.error("Login error:", msg);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="container">
@@ -70,7 +60,7 @@ function Loginscreen() {
 
       <div className="row justify-content-center mt-5">
         <div className="col-md-5 mt-5">
-          {error && <Error message={error} />}
+          {error && <Error message={error} onClose={() => setError(null)} />}
 
           <form onSubmit={login}>
             <div className="bs p-4 shadow-sm">
@@ -98,17 +88,19 @@ function Loginscreen() {
                 />
               </div>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="btn btn-primary w-100 mt-3"
                 disabled={loading}
               >
-                {loading ? 'Logging in...' : 'Login'}
+                {loading ? "Logging in..." : "Login"}
               </button>
 
               <p className="mt-3 text-center">
-                Don't have an account? 
-                <Link to="/register" className="ms-1">Register here</Link>
+                Don't have an account?
+                <Link to="/register" className="ms-1">
+                  Register here
+                </Link>
               </p>
             </div>
           </form>
