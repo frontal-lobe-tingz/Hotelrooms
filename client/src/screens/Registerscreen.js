@@ -15,8 +15,33 @@ function Registerscreen() {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+<<<<<<< Updated upstream
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
+=======
+  const [success, setSuccess] = useState(null);
+
+  async function register() {
+    if (password === confirmPassword) {
+      const user = {
+        name,
+        email,
+        password,
+      };
+      try {
+        setLoading(true);
+        // Await the result and access .data after the promise resolves
+        const response = await axios.post('http://localhost:5000/api/user/register', user);
+        console.log(response.data); // Response from backend
+       // alert(response.data.message); // Shows success message
+     setLoading(false)
+     setSuccess(true)
+
+setName('')
+setEmail('')
+setPassword('')
+setConfirmPassword('')
+>>>>>>> Stashed changes
 
 
   const API_URL = process.env.REACT_APP_API_URL || "https://hotelrooms-backend.onrender.com";

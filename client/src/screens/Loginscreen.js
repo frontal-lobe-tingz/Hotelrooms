@@ -28,6 +28,7 @@ function Loginscreen() {
 
     try {
       setLoading(true);
+<<<<<<< Updated upstream
       setError(null);
       
       const response = await axios.post(`${API_URL}/api/user/login`, user, {
@@ -46,6 +47,12 @@ function Loginscreen() {
         
         navigate("/home");
       }
+=======
+      const response = await axios.post("http://localhost:5000/api/user/login", user);
+      localStorage.setItem("currentUser", JSON.stringify(response.data));
+      setLoading(false);
+      navigate("/home");
+>>>>>>> Stashed changes
     } catch (err) {
       const errorMessage = err.response?.data?.message || 
                           err.message || 
