@@ -34,7 +34,10 @@ function Profilescreen() {
 export default Profilescreen;
 
 export function MyBookings() {
+
+  const API_URL = process.env.REACT_APP_API_URL;
   const user = JSON.parse(localStorage.getItem("currentUser"));
+  
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -44,9 +47,11 @@ export function MyBookings() {
       if (user) {
         try {
           // setLoading(true);
-          const response = await axios.post("/api/bookings/getbookingsbyid/", {
-            userid: user._id,
-          });
+          const response = await axios.post(
+               `${API_URL}/api/bookings/getbookingsbyid`,
+               { userid: user._id },
+               { headers: { "Content-Type": "application/json" } }
+             );
           console.log("API Response:", response.data);
 
           setBookings(response.data);
@@ -68,10 +73,11 @@ export function MyBookings() {
 
   const cancelBooking = async (bookingid, roomid) => {
     try {
-      const response = await axios.post('/api/bookings/cancelbooking/', {
-        bookingid: bookingid,
-        roomid: roomid,
-      });
+      const response = await axios.post(
+           `${API_URL}/api/bookings/cancelbooking`,
+           { bookingid, roomid },
+           { headers: { "Content-Type": "application/json" } }
+        );
       console.log("API Response:", response.data);
       alert('Booking cancelled successfully');
 
