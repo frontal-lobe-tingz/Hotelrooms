@@ -10,7 +10,7 @@ function Navbar() {
     <div>
       <nav className="navbar navbar-expand-lg ">
         <a className="navbar-brand" href="/home">
-          Conference rooms
+          Hotel rooms
         </a>
         <button
           className="navbar-toggler"
